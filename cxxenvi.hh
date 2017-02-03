@@ -159,19 +159,47 @@ class ENVI
 				throw std::runtime_error("key " + _k + " already exists with value " + values[idx]);
 		}
 
-		void create_kval(std::string const& _key, std::string const& _val)
+		std::string& create_kval(std::string const& _key, std::string const& _val)
 		{
 			keys.push_back(_key);
 			values.push_back(_val);
+			return values.back();
 		}
 
 		template<typename T>
-		void create_kval(std::string const& _key, T const& _val)
+		std::string& create_kval(std::string const& _key, T const& _val)
 		{
 			std::stringstream str; str << _val;
-			create_kval(_key, str.str());
+			return create_kval(_key, str.str());
 		}
 
+		// Terminator for the variadic template expansion
+		void append_values(std::stringstream& ss, size_t count)
+		{
+			ss << " }";
+		}
+
+		template<typename ...T>
+		void append_values(std::stringstream& ss, size_t count,
+			char const* str, T const& ... rest)
+		{
+			if (count)
+				ss << ", ";
+			ss << str;
+			append_values(ss, count+1, rest...);
+
+		}
+
+		template<typename T1, typename ...T>
+		void append_values(std::stringstream& ss, size_t count,
+			T1 const& value, T const& ... rest)
+		{
+			if (count)
+				ss << ", ";
+			ss << value;
+			append_values(ss, count+1, rest...);
+
+		}
 	public:
 
 		size_t size() const
@@ -210,6 +238,21 @@ class ENVI
 			size_t idx = index(_k, true);
 
 			create_kval(_k, _v);
+		}
+
+		// Add a key-value pair where the value is an array of values
+		template<typename ... T>
+		void add_multi(std::string const& _k, T const& ... values)
+		{
+			size_t idx = index(_k, true);
+
+			std::stringstream ss;
+
+			ss << "{ ";
+
+			append_values(ss, size_t(0), values...);
+
+			create_kval(_k, ss.str());
 		}
 
 	};
@@ -372,10 +415,18 @@ class ENVI
 			return add_channel(ch_name, &vec.front());
 		}
 
+		// Add a single-valued meta key
 		template<typename T>
 		void add_meta(std::string const& key, T const& value)
 		{
 			meta.add(key, value);
+		}
+
+		// Add a multi-valued meta key
+		template<typename ...T>
+		void add_meta(std::string const& key, T const& ... value)
+		{
+			meta.add_multi(key, value...);
 		}
 	};
 
