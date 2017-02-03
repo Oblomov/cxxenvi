@@ -474,10 +474,17 @@ public:
 	// Method to load a single channel from a file. This will be
 	// only declared here, as its definition depends on the ENVI::Input
 	// definition
-	template<typename T>
+	template<typename OutputDataType, typename ChannelSpec>
 	static void
-	load(std::string const& input_fname, std::string const& channel,
-		size_t &lines, size_t &samples, std::vector<T>& data);
+	load(std::string const& input_fname, ChannelSpec const& channel,
+		size_t &lines, size_t &samples, std::vector<OutputDataType>& data);
+
+	// Comfort method to load a single-channel file
+	template<typename OutputDataType>
+	static void
+	undump(std::string const& input_fname,
+		size_t &lines, size_t &samples, std::vector<OutputDataType>& data);
+
 };
 
 #define DEFINE_DATA_TYPE(typ, key) \
@@ -795,6 +802,27 @@ public:
 		prepare_reading();
 	}
 
+	size_t num_channels() const
+	{
+		return channels.size();
+	}
+
+	// Load channel number chnum
+	template<typename OutputType>
+	void load(size_t chnum, size_t &o_lines, size_t &o_samples,
+		std::vector<OutputType>& o_data)
+	{
+		if (chnum >= channels.size())
+			throw std::invalid_argument("channel number too high");
+
+		o_lines = lines;
+		o_samples = samples;
+		o_data.resize(pixels);
+
+		Loader<>::load(input_data_type, this, chnum, o_data);
+	}
+
+
 	template<typename OutputType>
 	void load(std::string const& channel, size_t &o_lines, size_t &o_samples,
 		std::vector<OutputType>& o_data)
@@ -808,11 +836,7 @@ public:
 
 		const size_t chnum = channel_idx - channels.cbegin();
 
-		o_lines = lines;
-		o_samples = samples;
-		o_data.resize(pixels);
-
-		Loader<>::load(input_data_type, this, chnum, o_data);
+		load (chnum, o_lines, o_samples, o_data);
 	}
 
 	~BasicInput()
@@ -822,13 +846,25 @@ public:
 	}
 };
 
-template<typename T>
-void ENVI::load(std::string const& input_fname, std::string const& channel,
-	size_t &lines, size_t &samples, std::vector<T>& data)
+template<typename OutputDataType, typename ChannelSpec>
+void ENVI::load(std::string const& input_fname, ChannelSpec const& channel,
+	size_t &lines, size_t &samples, std::vector<OutputDataType>& data)
 {
 	Input loader(input_fname);
 
 	loader.load(channel, lines, samples, data);
+}
+
+template<typename OutputDataType>
+void ENVI::undump(std::string const& input_fname,
+	size_t &lines, size_t &samples, std::vector<OutputDataType>& data)
+{
+	Input loader(input_fname);
+
+	if (loader.num_channels() > 1)
+		std::clog << "ENVI::undump called on a file with multiple channels, reading the first one" << std::endl;
+
+	loader.load(0, lines, samples, data);
 }
 
 #endif
