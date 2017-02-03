@@ -441,10 +441,11 @@ class ENVI
 public:
 
 	// Open an ENVI file for writing, specifying
-	// the number of rows (lines) and columns (samples)
+	// the number of rows (lines) and columns (samples). If the file already exists,
+	// it will be overwritten.
 	template<typename T>
 	static std::shared_ptr<Output<T>>
-	open(std::string const& output_fname, std::string const& desc,
+	create(std::string const& output_fname, std::string const& desc,
 		size_t lines, size_t samples)
 	{
 		return std::shared_ptr<Output<T>>(
@@ -457,7 +458,7 @@ public:
 	dump(std::string const& output_fname, std::string const& desc,
 		size_t lines, size_t samples, T const *data)
 	{
-		auto f = open<T>(output_fname, desc, lines, samples);
+		auto f = create<T>(output_fname, desc, lines, samples);
 		f->add_channel(desc, data);
 	}
 
