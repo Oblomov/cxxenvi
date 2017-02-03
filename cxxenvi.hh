@@ -476,10 +476,11 @@ public:
 	// definition
 	template<typename OutputDataType, typename ChannelSpec>
 	static void
-	load(std::string const& input_fname, ChannelSpec const& channel,
+	undump(std::string const& input_fname, ChannelSpec const& channel,
 		size_t &lines, size_t &samples, std::vector<OutputDataType>& data);
 
-	// Comfort method to load a single-channel file
+	// Comfort method to load a single-channel file. Same as undump() with channel = 0,
+	// but throws if there is more than one channel
 	template<typename OutputDataType>
 	static void
 	undump(std::string const& input_fname,
@@ -575,6 +576,7 @@ protected:
 	// except for array/string values, that begin with '{' and end
 	// with '}' (followed by a newline). So if an input contains a
 	// { we keep reading lines until we find the closing }
+	// TODO return information on whether it was in {} or not
 	inline void read_keyval(std::string &key, std::string &val)
 	{
 		std::string keyval;
@@ -853,7 +855,7 @@ public:
 };
 
 template<typename OutputDataType, typename ChannelSpec>
-void ENVI::load(std::string const& input_fname, ChannelSpec const& channel,
+void ENVI::undump(std::string const& input_fname, ChannelSpec const& channel,
 	size_t &lines, size_t &samples, std::vector<OutputDataType>& data)
 {
 	Input loader(input_fname);
@@ -868,7 +870,7 @@ void ENVI::undump(std::string const& input_fname,
 	Input loader(input_fname);
 
 	if (loader.num_channels() > 1)
-		std::clog << "ENVI::undump called on a file with multiple channels, reading the first one" << std::endl;
+		throw std::runtime_error("file has multiple channel, cannot do a simple undump");
 
 	loader.load(0, lines, samples, data);
 }
