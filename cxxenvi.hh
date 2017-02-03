@@ -522,6 +522,7 @@ template<typename StreamType = std::ifstream>
 class ENVI::BasicInput
 {
 protected:
+	Metadata meta;
 	std::string description;
 	size_t lines, samples, pixels;
 	size_t data_offset;
@@ -673,7 +674,7 @@ protected:
 			if (expected && channels.size() != expected)
 				throw std::runtime_error("inconsistent band names and bands");
 		} else {
-			std::clog << "Skipping unknown key '" << key << "' with value '" << val << "'" << std::endl;
+			meta.add(key, val);
 		}
 	}
 
@@ -805,6 +806,11 @@ public:
 	size_t num_channels() const
 	{
 		return channels.size();
+	}
+
+	std::string const& get_meta(std::string const& key) const
+	{
+		return meta.get(key);
 	}
 
 	// Load channel number chnum
