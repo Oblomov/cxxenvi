@@ -34,6 +34,7 @@
 #include <vector>
 #include <stdexcept>
 #include <fstream>
+#include <sstream>
 #include <memory>
 #include <algorithm>
 
@@ -137,12 +138,89 @@ class ENVI
 		return fname.substr(0, dot) + ".hdr";
 	}
 
+	// The metadata included in a header file: a set of key-values.
+	// We want to preserve order, so instead of using a hash
+	// we use a pair of vectors
+	class Metadata
+	{
+		static const size_t npos = SIZE_MAX;
+
+		std::vector<std::string> keys;
+		std::vector<std::string> values;
+
+		size_t index(std::string const& _k, bool fail_present = false) const
+		{
+			const auto ini(keys.cbegin());
+			const auto fin(keys.cend());
+			const auto found(std::find(ini, fin, _k));
+			size_t idx = ((found == fin) ? npos : found - ini);
+
+			if (idx != npos && fail_present)
+				throw std::runtime_error("key " + _k + " already exists with value " + values[idx]);
+		}
+
+		void create_kval(std::string const& _key, std::string const& _val)
+		{
+			keys.push_back(_key);
+			values.push_back(_val);
+		}
+
+		template<typename T>
+		void create_kval(std::string const& _key, T const& _val)
+		{
+			std::stringstream str; str << _val;
+			create_kval(_key, str.str());
+		}
+
+	public:
+
+		size_t size() const
+		{ return keys.size(); }
+
+		std::string const& key(size_t i) const
+		{ return keys[i]; }
+
+		std::string const& value(size_t i) const
+		{ return values[i]; }
+
+		// get a (string) value from a key, with optional default (empty)
+		std::string const& get(std::string const& _k, std::string const& _missing=std::string()) const
+		{
+			size_t idx = index(_k);
+			if (idx == npos)
+				return _missing;
+			return values[idx];
+		}
+
+		// return the value of key k, defaulting to _missing
+		template<typename T>
+		T get(std::string const& _k, T const& _missing) const
+		{
+			T ret = _missing;
+			size_t idx = index(_k);
+			if (idx != npos)
+				std::stringstream(values[idx]) >> ret;
+			return ret;
+		}
+
+		// Add a key-value pair.
+		template<typename T>
+		void add(std::string const& _k, T const& _v)
+		{
+			size_t idx = index(_k, true);
+
+			create_kval(_k, _v);
+		}
+
+	};
+
 	// The ENVI::Output() template class, encapsulating writing to an ENVI file.
 	// Samples on-disk will be a serialization of OutputDataType (which must be
 	// one of the data types symbolized in DataTypeEnum
 	template<typename OutputDataType, typename StreamType = std::ofstream>
 	class Output
 	{
+		Metadata meta;
 		const std::string description;
 		const size_t lines, samples, pixels;
 		std::vector<std::string> channels;
@@ -197,7 +275,11 @@ class ENVI
 			hdr << "band names = {" ;
 			write_channel_names();
 			hdr << "}\n";
-			// TODO add custom headers
+
+			for (size_t i = 0; i < meta.size(); ++i)
+			{
+				hdr << meta.key(i) << " = " << meta.value(i) << "\n";
+			}
 		}
 
 		void prepare_writing()
@@ -288,6 +370,12 @@ class ENVI
 			if (vec.size() != lines*samples)
 				throw std::runtime_error("wrong number of pixels in channel " + ch_name);
 			return add_channel(ch_name, &vec.front());
+		}
+
+		template<typename T>
+		void add_meta(std::string const& key, T const& value)
+		{
+			meta.add(key, value);
 		}
 	};
 
