@@ -3,12 +3,26 @@
 
 /* Read/Write raw ENVI files: these are split into a 'raw'
  * file plus a separate .hdr file.
- * TODO since the .hdr supports offsets, we could make the 'raw' file into
- * some other format with included header. Sadly we can't use PFM,
- * whose scanlines are stored bottom to top. Maybe FITS? 
- * TODO support reading other raw formats (ESRI, or what Gdal calls 'GenBin'),
- * they work in the same way, just the header is marginally different.
- * TODO support arbitrary streams for input/ouput (WIP)
+ * TODO:
+ * 	since the .hdr supports offsets, we could make the 'raw' file into
+ * 	some other format with included header. Sadly we can't use PFM,
+ * 	whose scanlines are stored bottom to top. Maybe FITS?
+ * TODO:
+ * 	support reading other raw formats (ESRI, or what Gdal calls 'GenBin'),
+ * 	they work in the same way, just the header is marginally different.
+ * TODO:
+ * 	support arbitrary streams for input/ouput (WIP)
+ * TODO:
+ * 	support other raw interleave formats (BIL and BIP)
+ * TODO:
+ * 	while ENVI doesn't seem to have builtin support for compressed files,
+ * 	supporting them at least with BSQ would be quite trivial, by either using
+ * 	something like gzstream or zlib directly. The latter would even allow us to
+ * 	compress each channel separately, allowing easier seeks on load.
+ * TODO:
+ * 	inline all we can, check performance
+ * TODO:
+ * 	improve documentation detail and quality
  */
 
 /*
