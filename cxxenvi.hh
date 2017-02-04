@@ -186,15 +186,14 @@ class ENVI
 				throw std::runtime_error("key " + _k + " already exists with value " + values[idx]);
 		}
 
-		std::string& create_kval(std::string const& _key, std::string const& _val)
+		void create_kval(std::string const& _key, std::string const& _val)
 		{
 			keys.push_back(_key);
 			values.push_back(_val);
-			return values.back();
 		}
 
 		template<typename T>
-		std::string& create_kval(std::string const& _key, T const& _val)
+		void create_kval(std::string const& _key, T const& _val)
 		{
 			std::stringstream str; str << _val;
 			return create_kval(_key, str.str());
@@ -214,7 +213,6 @@ class ENVI
 				ss << ", ";
 			ss << str;
 			append_values(ss, count+1, rest...);
-
 		}
 
 		template<typename T1, typename ...T>
@@ -225,8 +223,8 @@ class ENVI
 				ss << ", ";
 			ss << value;
 			append_values(ss, count+1, rest...);
-
 		}
+
 	public:
 
 		size_t size() const
@@ -272,13 +270,9 @@ class ENVI
 		void add_multi(std::string const& _k, T const& ... values)
 		{
 			size_t idx = index(_k, true);
-
 			std::stringstream ss;
-
 			ss << "{ ";
-
 			append_values(ss, size_t(0), values...);
-
 			create_kval(_k, ss.str());
 		}
 
