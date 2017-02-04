@@ -20,9 +20,18 @@
 
 /*** Configuration ***/
 
-// define CXXENVI_COMPLEX to disable support for complex types
+// To enable support for complex types, define CXXENVI_COMPLEX to any
+// non-zero value before including this header. By default we disable
+// support to avoid loading unnecessary files
 #ifndef CXXENVI_COMPLEX
 #define CXXENVI_COMPLEX 0
+#endif
+
+// To enable output of (some) diagnostic information, define CXXENVI_DEBUG
+// to any non-zero value before including this header. By default we
+// disable any output
+#ifndef CXXENVI_DEBUG
+#define CXXENVI_DEBUG 0
 #endif
 
 /*
@@ -38,10 +47,12 @@
 #include <memory>
 #include <algorithm>
 
-#include <iostream> // clog
-
 #if CXXENVI_COMPLEX
 #include <complex>
+#endif
+
+#if CXXENVI_DEBUG
+#include <iostream>
 #endif
 
 class ENVI
@@ -90,26 +101,28 @@ class ENVI
 			(type <= 9 || type >=12));
 	}
 
-	// return the next valid DataTypeEnum
-	// TODO FIXME this skips complex types because currently
-	// we do not support them
+	// return the next valid DataTypeEnum. If complex
+	// support is enabled, we have to handle discontinuities
+	// between FP32C/FP64C and FP64C/UINT16, otherwise
+	// we only take care of the gap FP64/UINT16.
+	// We use UINT64 itself as 'next type' to UINT64 itself,
+	// it's up to the caller to check for repetion and abort
+	// as necessary.
+	// (Another solution would be to add some invalid type value
+	// to the enum, but I'm not sure it would be better.)
 	constexpr static inline DataTypeEnum
 	next_type(DataTypeEnum cur)
 	{
-#if CXXENVI_COMPLEX
 		return (
+#if CXXENVI_COMPLEX
 			(cur == FP32C) ? FP64C :
 			(cur == FP64C) ? UINT16 :
-			(cur == UINT64) ? UINT64 : // meh
-			static_cast<DataTypeEnum>(cur+1)
-		       );
 #else
-		return (
 			(cur == FP64) ?  UINT16 :
+#endif
 			(cur == UINT64) ? UINT64 : // meh
 			static_cast<DataTypeEnum>(cur+1)
 		       );
-#endif
 	}
 
 	// Forward declaration of a template structure used to convert
@@ -694,7 +707,9 @@ protected:
 			if (key.empty())
 				break;
 
-			// std::clog << "KEY: '" << key << "', VAL: '" << val << "'" << std::endl;
+#if CXXENVI_DEBUG
+			std::clog << "KEY: '" << key << "', VAL: '" << val << "'" << std::endl;
+#endif
 
 			process_keyval(key, val);
 		} while (hdr);
