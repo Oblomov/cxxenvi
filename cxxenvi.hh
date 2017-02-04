@@ -510,32 +510,33 @@ public:
 	// Open an ENVI file for writing, specifying
 	// the number of rows (lines) and columns (samples). If the file already exists,
 	// it will be overwritten.
-	template<typename T>
-	static std::shared_ptr<Output<T>>
+	template<typename OutputDataType>
+	static std::shared_ptr<Output<OutputDataType>>
 	create(std::string const& output_fname, std::string const& desc,
 		size_t lines, size_t samples)
 	{
-		return std::shared_ptr<Output<T>>(
-			new Output<T>(output_fname, desc, lines, samples));
+		return std::shared_ptr<Output<OutputDataType>>(
+			new Output<OutputDataType>(output_fname, desc, lines, samples));
 	}
 
 	// Comfort method to write a single-channel file
-	template<typename T>
+	template<typename OutputDataType>
 	static void
 	dump(std::string const& output_fname, std::string const& desc,
-		size_t lines, size_t samples, T const *data)
+		size_t lines, size_t samples, OutputDataType const *data)
 	{
-		auto f = create<T>(output_fname, desc, lines, samples);
+		auto f = create<OutputDataType>(output_fname, desc, lines, samples);
 		f->add_channel(desc, data);
 	}
 
 	// Comfort method to write a single-channel file
-	template<typename T>
+	template<typename OutputDataType>
 	static void
 	dump(std::string const& output_fname, std::string const& desc,
-		size_t lines, size_t samples, std::vector<T> const& data)
+		size_t lines, size_t samples, std::vector<OutputDataType> const& data)
 	{
-		dump(output_fname, desc, lines, samples, &data[0]);
+		auto f = create<OutputDataType>(output_fname, desc, lines, samples);
+		f->add_channel(desc, data);
 	}
 
 	// Method to load a single channel from a file. This will be
