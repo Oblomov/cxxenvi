@@ -880,14 +880,13 @@ public:
 	}
 
 	size_t num_channels() const
-	{
-		return channels.size();
-	}
+	{ return channels.size(); }
+
+	std::vector<std::string> const& channel_names() const
+	{ return channels; }
 
 	std::string const& get_meta(std::string const& key) const
-	{
-		return meta.get(key);
-	}
+	{ return meta.get(key); }
 
 	// Load channel number chnum
 	template<typename OutputType>
