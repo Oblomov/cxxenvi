@@ -458,6 +458,30 @@ class ENVI
 			return add_channel(ch_name, &vec.front());
 		}
 
+		// Add a channel from a linearized array with the given
+		// stride (in elements), starting from the given row and column
+		template<typename InputDataType>
+		size_t add_channel_rect(std::string const& ch_name,
+			InputDataType const* ptr, size_t stride,
+			size_t row=0, size_t col=0)
+		{
+			if (stride < samples + col)
+				throw std::runtime_error("data stride too small in channel " + ch_name);
+			write_strided_channel(ptr + row*stride + col, stride);
+			channels.push_back(ch_name);
+			return channels.size() - 1;
+		}
+
+		template<typename InputDataType>
+		size_t add_channel_rect(std::string const& ch_name,
+			std::vector<InputDataType> const& vec, size_t stride,
+			size_t row=0, size_t col=0)
+		{
+			if ( (row+lines)*stride < vec.size())
+				throw std::runtime_error("vector too small for channel " + ch_name);
+			return add_channel_rect(ch_name, &vec.front(), stride, row, col);
+		}
+
 		// Add a single-valued meta key
 		template<typename T>
 		void add_meta(std::string const& key, T const& value)
