@@ -539,6 +539,10 @@ public:
 		f->add_channel(desc, data);
 	}
 
+	// Open an ENVI file for reading
+	static std::shared_ptr<Input>
+	ropen(std::string const& input_fname);
+
 	// Method to load a single channel from a file. This will be
 	// only declared here, as its definition depends on the ENVI::Input
 	// definition
@@ -923,6 +927,11 @@ public:
 			close();
 	}
 };
+
+std::shared_ptr<ENVI::Input> ENVI::ropen(std::string const& input_fname)
+{
+	return std::shared_ptr<Input>(new Input(input_fname));
+}
 
 template<typename OutputDataType, typename ChannelSpec>
 void ENVI::undump(std::string const& input_fname, ChannelSpec const& channel,
