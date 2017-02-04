@@ -293,21 +293,43 @@ class ENVI
 		// Did we open data and hdr ourselves?
 		bool need_closing;
 
-		// Write out a single channel, of type InputDataType.
-		// In general, this requires sample-by-sample conversion
+		// Write out channel data, of type InputDataType.
+		// The generic version does sample-by-sample conversion from
+		// InputDataType to OutputDataType
 		template<typename InputDataType>
-		void write_channel(InputDataType const *ptr)
+		void write_channel_data(InputDataType const *ptr, size_t count)
 		{
-			for (size_t s = 0; s < samples; ++s) {
-				OutputDataType sample = ptr[s];
-				data.write((const char*)sample, sizeof(sample));
+			for (size_t p = 0; p < count; ++p) {
+				OutputDataType sample = ptr[p];
+				data.write((const char*)&sample, sizeof(sample));
 			}
 		}
 
-		// Specialization of write_channel when no conversion is needed
-		void write_channel(OutputDataType const *ptr)
+		// Specialization of write_channel_data when no conversion is needed
+		void write_channel_data(OutputDataType const *ptr, size_t count)
 		{
-			data.write((const char*)ptr, pixels*sizeof(*ptr));
+			data.write((const char*)ptr, count*sizeof(*ptr));
+		}
+
+		// Write out a whole channel, from data stored at ptr
+		template<typename InputDataType>
+		void write_channel(InputDataType const *ptr)
+		{
+			write_channel_data(ptr, pixels);
+		}
+
+		// Write out a whole channel, from data stored at ptr, assuming
+		// that consecutive lines are at stride elements of each other.
+		// (For example, because we are only storing a subset of the data,
+		// or because lines of in-memory data were allocated with a larger
+		// pitch than needed for alignment reasons or whatever.)
+		template<typename InputDataType>
+		void write_strided_channel(InputDataType const *ptr, size_t stride)
+		{
+			for (size_t l = 0; l < lines; ++l) {
+				InputDataType const *line = ptr + l*stride;
+				write_channel_data(line, samples);
+			}
 		}
 
 		// Write channel names in the header: one per line if there's
