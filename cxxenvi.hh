@@ -891,7 +891,7 @@ public:
 
 	// Load channel number chnum
 	template<typename OutputType>
-	void load(size_t chnum, size_t &o_lines, size_t &o_samples,
+	void get_channel(size_t chnum, size_t &o_lines, size_t &o_samples,
 		std::vector<OutputType>& o_data)
 	{
 		if (chnum >= channels.size())
@@ -906,7 +906,7 @@ public:
 
 
 	template<typename OutputType>
-	void load(std::string const& channel, size_t &o_lines, size_t &o_samples,
+	void get_channel(std::string const& channel, size_t &o_lines, size_t &o_samples,
 		std::vector<OutputType>& o_data)
 	{
 		auto channel_idx(
@@ -939,7 +939,7 @@ void ENVI::undump(std::string const& input_fname, ChannelSpec const& channel,
 {
 	Input loader(input_fname);
 
-	loader.load(channel, lines, samples, data);
+	loader.get_channel(channel, lines, samples, data);
 }
 
 template<typename OutputDataType>
@@ -951,7 +951,7 @@ void ENVI::undump(std::string const& input_fname,
 	if (loader.num_channels() > 1)
 		throw std::runtime_error("file has multiple channel, cannot do a simple undump");
 
-	loader.load(0, lines, samples, data);
+	loader.get_channel(0, lines, samples, data);
 }
 
 #endif
