@@ -278,6 +278,8 @@ private:
 
 			if (idx != npos && fail_present)
 				throw std::runtime_error("key " + _k + " already exists with value " + values[idx]);
+
+			return idx;
 		}
 
 		void create_kval(std::string const& _key, std::string const& _val)
