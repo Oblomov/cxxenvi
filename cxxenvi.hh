@@ -71,6 +71,86 @@
 
 class ENVI
 {
+public:
+	/*
+	 * Whitespace functions
+	 */
+
+	/* We will need to trim whitespace, and sadly the standard
+	 * library doesn't have functions for that, so we will have to
+	 * define our own. Make them public for convenience of others.
+	 */
+
+	// remove whitespace on the right
+	static inline std::string&
+	rtrim(std::string &str, const char *whitespace = " \n\t\v")
+	{
+		size_t nws = str.find_last_not_of(whitespace);
+		if (nws == str.npos)
+			str.clear();
+		else
+			str.erase(++nws, str.npos);
+		return str;
+	}
+
+	// remove whitespace on the left
+	static inline std::string&
+	ltrim(std::string &str, const char *whitespace = " \n\t\v")
+	{
+		size_t nws = str.find_first_not_of(whitespace);
+		if (nws == str.npos)
+			str.clear();
+		else
+			str.erase(0, nws);
+		return str;
+	}
+
+	// remove whitespace on both sides
+	static inline std::string&
+	trim(std::string &str, const char *whitespace = " \n\t\v")
+	{
+		return ltrim(rtrim(str, whitespace), whitespace);
+	}
+
+	/*
+	 * Tuple functions
+	 */
+
+	/* ENVI files can contain metadata values with multiple
+	 * types. We allow fetching them as a vector of strings, or
+	 * as a tuple of values of different types. The function(s)
+	 * to convert from vector of strings to tuple is very useful,
+	 * so we expose it too
+	 */
+
+
+	template<size_t pos, typename TupleType>
+	static
+	typename std::enable_if<(pos == std::tuple_size<TupleType>::value)>::type
+	string_to_tuple(
+		std::vector<std::string> const& strings,
+		TupleType &tuple)
+	{
+		return;
+	}
+
+	template<size_t pos, typename TupleType>
+	static
+	typename std::enable_if<(pos < std::tuple_size<TupleType>::value)>::type
+	string_to_tuple(
+		std::vector<std::string> const& strings,
+		TupleType &tuple)
+	{
+		if (pos < strings.size()) {
+			std::stringstream ss(strings[pos]);
+			ss >> std::get<pos>(tuple);
+			string_to_tuple<pos+1>(strings, tuple);
+		}
+	}
+
+	/*
+	 * Endianness
+	 */
 
 	// NOTE: ENVI doesn't seem to support mixed-endian hardware
 	// such as the PDP-11
@@ -89,6 +169,10 @@ class ENVI
 		return (*reinterpret_cast<const uint16_t*>("\xff\x00") == 0xff) ?
 			LITTLE : BIG ;
 	}
+
+	/*
+	 * Data types
+	 */
 
 	enum DataTypeEnum
 	{
@@ -150,6 +234,8 @@ class ENVI
 	// Example usage: ENVI::CodeType<ENVI::DataTypeEnum::INT64>::type
 	// To get: int64_t
 	template<DataTypeEnum val> struct CodeType;
+
+private:
 
 	// ENVI replaces the last extension with .hdr, or appends .hdr
 	// if no extension is found. We follow the same practice.
@@ -276,6 +362,31 @@ class ENVI
 			create_kval(_k, ss.str());
 		}
 
+		// get the value of a key as an array of strings (splitting the original
+		// value at commas
+		std::vector<std::string> get_values(std::string const& _k) const
+		{
+			std::string const& v = this->get(_k);
+			std::stringstream ss(v);
+			std::vector<std::string> ret;
+			std::string cur;
+			while (getline(ss, cur, ',')) {
+				ret.push_back(trim(cur));
+			}
+			return ret;
+		}
+
+		// Convert a value into a tuple of arbitrary types
+		template<typename ... T>
+		std::tuple<T...> get_tuple(std::string const& _k) const
+		{
+			std::vector<std::string> strings = get_values(_k);
+			std::tuple<T...> ret;
+
+			string_to_tuple<0>(strings, ret);
+
+			return ret;
+		}
 	};
 
 	// The ENVI::Output() template class, encapsulating writing to an ENVI file.
@@ -591,7 +702,7 @@ DEFINE_DATA_TYPE(uint64_t, UINT64);
 // Class to manage input from 'arbitrary' istreams
 // TODO expose metadata
 // TODO allow reading of all channels at once
-template<typename StreamType = std::ifstream>
+template<typename StreamType>
 class ENVI::BasicInput
 {
 protected:
@@ -605,45 +716,6 @@ protected:
 	StreamType hdr;
 	bool need_closing;
 
-
-public:
-	/* We will need to trim whitespace, and sadly the standard
-	 * library doesn't have functions for that, so we will have to
-	 * define our own. Make them public for convenience of others.
-	 */
-
-	// remove whitespace on the right
-	static inline std::string&
-	rtrim(std::string &str, const char *whitespace = " \n\t\v")
-	{
-		size_t nws = str.find_last_not_of(whitespace);
-		if (nws == str.npos)
-			str.clear();
-		else
-			str.erase(++nws, str.npos);
-		return str;
-	}
-
-	// remove whitespace on the left
-	static inline std::string&
-	ltrim(std::string &str, const char *whitespace = " \n\t\v")
-	{
-		size_t nws = str.find_first_not_of(whitespace);
-		if (nws == str.npos)
-			str.clear();
-		else
-			str.erase(0, nws);
-		return str;
-	}
-
-	// remove whitespace on both sides
-	static inline std::string&
-	trim(std::string &str, const char *whitespace = " \n\t\v")
-	{
-		return ltrim(rtrim(str, whitespace), whitespace);
-	}
-
-protected:
 	// We assume that each key = value is in a separate line,
 	// except for array/string values, that begin with '{' and end
 	// with '}' (followed by a newline). So if an input contains a
@@ -887,6 +959,18 @@ public:
 
 	std::string const& get_meta(std::string const& key) const
 	{ return meta.get(key); }
+
+	template<typename T>
+	T get_meta(std::string const& key, T const& missing) const
+	{ return meta.get(key, missing); }
+
+	template<typename ...T>
+	std::vector<std::string> get_meta_values(std::string const& key) const
+	{ return meta.get_values(key); }
+
+	template<typename ...T>
+	std::tuple<T...> get_meta_tuple(std::string const& key) const
+	{ return meta.get_tuple<T...>(key); }
 
 	// Load channel number chnum
 	template<typename OutputType>
