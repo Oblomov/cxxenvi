@@ -888,6 +888,25 @@ protected:
 
 		template<typename OutputType>
 		static inline void
+		undump(size_t count, std::istream &data, OutputType *o_data)
+		{
+			for (size_t px = 0; px < count; ++px) {
+				InputType val;
+				data.read(reinterpret_cast<char*>(&val), sizeof(InputType));
+				o_data[px] = val;
+			}
+		}
+
+		// Specialization for matching type
+		static inline void
+		undump(size_t count, std::istream &data, InputType *o_data)
+		{
+			data.read(reinterpret_cast<char*>(o_data), count*sizeof(InputType));
+		}
+
+
+		template<typename OutputType>
+		static inline void
 		undump(size_t count, std::istream &data, std::vector<OutputType>& o_data)
 		{
 			for (size_t px = 0; px < count; ++px) {
@@ -907,7 +926,7 @@ protected:
 
 		template<typename OutputType>
 		static inline void
-		prep_load(Input *in, size_t chnum, std::vector<OutputType>& o_data)
+		prep_load(Input *in, size_t chnum, OutputType *o_data)
 		{
 			size_t raw_offset = in->data_offset + chnum*in->pixels*sizeof(InputType);
 			in->data.seekg(raw_offset);
@@ -917,7 +936,30 @@ protected:
 
 		template<typename OutputType>
 		static inline void
+		prep_load(Input *in, size_t chnum, std::vector<OutputType>& o_data)
+		{
+			size_t raw_offset = in->data_offset + chnum*in->pixels*sizeof(InputType);
+			in->data.seekg(raw_offset);
+
+			undump(in->pixels, in->data, o_data);
+		}
+
+
+		template<typename OutputType>
+		static inline void
 		load(DataTypeEnum req, Input *in, size_t chnum, std::vector<OutputType>& o_data)
+		{
+			if (req == input_type)
+				return prep_load(in, chnum, o_data);
+			// this shouldn't happen:
+			if (input_type == UINT64)
+				throw std::invalid_argument("invalid input type");
+			Loader<next_type(input_type)>::load(req, in, chnum, o_data);
+		}
+
+		template<typename OutputType>
+		static inline void
+		load(DataTypeEnum req, Input *in, size_t chnum, OutputType *o_data)
 		{
 			if (req == input_type)
 				return prep_load(in, chnum, o_data);
@@ -1023,7 +1065,13 @@ public:
 
 		const size_t chnum = channel_idx - channels.cbegin();
 
-		load (chnum, o_lines, o_samples, o_data);
+		load(chnum, o_lines, o_samples, o_data);
+	}
+
+	template<typename OutputType>
+	void get_channel(size_t chnum, OutputType *o_data)
+	{
+		Loader<>::load(input_data_type, this, chnum, o_data);
 	}
 
 	~BasicInput()
