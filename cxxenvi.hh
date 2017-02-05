@@ -330,6 +330,9 @@ private:
 		std::string const& value(size_t i) const
 		{ return values[i]; }
 
+		bool has_key(std::string const& _k) const
+		{ return std::find(keys.begin(), keys.end(), _k) != keys.end() ; }
+
 		// get a (string) value from a key, with optional default (empty)
 		std::string const& get(std::string const& _k, std::string const& _missing=std::string()) const
 		{
@@ -959,6 +962,9 @@ public:
 		prepare_reading();
 	}
 
+	std::pair<size_t, size_t> extent() const
+	{ return std::make_pair(lines, samples); }
+
 	size_t num_channels() const
 	{ return channels.size(); }
 
@@ -980,10 +986,12 @@ public:
 	std::tuple<T...> get_meta_tuple(std::string const& key) const
 	{ return meta.get_tuple<T...>(key); }
 
+	bool has_meta(std::string const& key) const
+	{ return meta.has_key(key); }
+
 	template<typename ...T>
 	void get_meta_tuple(std::string const& key, T&... args) const
 	{ std::tie(args...) = meta.get_tuple<T...>(key); }
-
 
 	// Load channel number chnum
 	template<typename OutputType>
@@ -999,7 +1007,6 @@ public:
 
 		Loader<>::load(input_data_type, this, chnum, o_data);
 	}
-
 
 	template<typename OutputType>
 	void get_channel(std::string const& channel, size_t &o_lines, size_t &o_samples,
