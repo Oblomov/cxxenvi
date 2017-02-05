@@ -134,6 +134,15 @@ public:
 		return;
 	}
 
+	template<typename T>
+	static void string_extract(std::string const& str, T& out)
+	{
+		std::stringstream ss(str);
+		ss >> out;
+	}
+
+	// Specialization for std::ignore defined outside
+
 	template<size_t pos, typename TupleType>
 	static
 	typename std::enable_if<(pos < std::tuple_size<TupleType>::value)>::type
@@ -142,8 +151,7 @@ public:
 		TupleType &tuple)
 	{
 		if (pos < strings.size()) {
-			std::stringstream ss(strings[pos]);
-			ss >> std::get<pos>(tuple);
+			string_extract(strings[pos], std::get<pos>(tuple));
 			string_to_tuple<pos+1>(strings, tuple);
 		}
 	}
@@ -972,6 +980,11 @@ public:
 	std::tuple<T...> get_meta_tuple(std::string const& key) const
 	{ return meta.get_tuple<T...>(key); }
 
+	template<typename ...T>
+	void get_meta_tuple(std::string const& key, T&... args) const
+	{ std::tie(args...) = meta.get_tuple<T...>(key); }
+
+
 	// Load channel number chnum
 	template<typename OutputType>
 	void get_channel(size_t chnum, size_t &o_lines, size_t &o_samples,
@@ -1010,6 +1023,10 @@ public:
 			close();
 	}
 };
+
+template<>
+void ENVI::string_extract<decltype(std::ignore)>(std::string const& str, decltype(std::ignore)&)
+{}
 
 std::shared_ptr<ENVI::Input> ENVI::ropen(std::string const& input_fname)
 {
