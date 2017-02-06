@@ -1071,6 +1071,9 @@ public:
 	template<typename OutputType>
 	void get_channel(size_t chnum, OutputType *o_data)
 	{
+		if (chnum >= channels.size())
+			throw std::invalid_argument("channel number too high");
+
 		Loader<>::load(input_data_type, this, chnum, o_data);
 	}
 
