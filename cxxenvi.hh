@@ -664,7 +664,7 @@ public:
 	}
 
 	// Open an ENVI file for reading
-	static std::shared_ptr<Input>
+	static inline std::shared_ptr<Input>
 	ropen(std::string const& input_fname);
 
 	// Method to load a single channel from a file. This will be
@@ -1085,7 +1085,7 @@ public:
 };
 
 template<>
-void ENVI::string_extract<decltype(std::ignore)>(std::string const& str, decltype(std::ignore)&)
+inline void ENVI::string_extract<decltype(std::ignore)>(std::string const& str, decltype(std::ignore)&)
 {}
 
 std::shared_ptr<ENVI::Input> ENVI::ropen(std::string const& input_fname)
