@@ -456,6 +456,20 @@ private:
 			}
 		}
 
+		// Write out a whole channel, from data provided by a function
+		// (or functor) that takes the current row, col as argument
+		// and returns the value
+		template<typename Func, typename ...Args>
+		void write_channel_function(Func&& func, Args&& ... args)
+		{
+			for (size_t l = 0; l < lines; ++l) {
+				for (size_t c = 0; c < samples; ++c) {
+					OutputDataType sample = std::bind(func, args..., l, c)();
+					data.write((const char*)&sample, sizeof(sample));
+				}
+			}
+		}
+
 		// Write channel names in the header: one per line if there's
 		// more than one, space-wrapped if there's only one
 		void write_channel_names()
@@ -604,6 +618,15 @@ private:
 			if ( (row+lines)*stride < vec.size())
 				throw std::runtime_error("vector too small for channel " + ch_name);
 			return add_channel_rect(ch_name, &vec.front(), stride, row, col);
+		}
+
+		// Add a channel defined by applying a function to (row, column) pairs
+		template<typename Func, typename ...Args>
+		size_t add_channel_func(std::string const& ch_name, Func&& func, Args&& ... args)
+		{
+			write_channel_function(func, args...);
+			channels.push_back(ch_name);
+			return channels.size() - 1;
 		}
 
 		// Add a single-valued meta key
