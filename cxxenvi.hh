@@ -291,7 +291,9 @@ private:
 		template<typename T>
 		void create_kval(std::string const& _key, T const& _val)
 		{
-			std::stringstream str; str << _val;
+			std::stringstream str;
+			str.precision(16);
+			str << _val;
 			return create_kval(_key, str.str());
 		}
 
@@ -370,6 +372,7 @@ private:
 		{
 			size_t idx = index(_k, true);
 			std::stringstream ss;
+			ss.precision(16);
 			ss << "{ ";
 			append_values(ss, size_t(0), values...);
 			create_kval(_k, ss.str());
