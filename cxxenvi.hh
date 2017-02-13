@@ -848,7 +848,7 @@ protected:
 			while ((found = val.find(',', prev)) != val.npos) {
 				std::string sec = val.substr(prev, found-prev);
 				channels.push_back(trim(sec));
-				prev = found;
+				prev = found+1;
 			}
 			// push the part after the last comma, if not empty
 			std::string rem = val.substr(prev, val.npos);
