@@ -128,8 +128,8 @@ public:
 	static
 	typename std::enable_if<(pos == std::tuple_size<TupleType>::value)>::type
 	string_to_tuple(
-		std::vector<std::string> const& strings,
-		TupleType &tuple)
+		std::vector<std::string> const& /* strings */,
+		TupleType & /* tuple */)
 	{
 		return;
 	}
@@ -298,7 +298,7 @@ private:
 		}
 
 		// Terminator for the variadic template expansion
-		void append_values(std::stringstream& ss, size_t count)
+		void append_values(std::stringstream& ss, size_t /* count */)
 		{
 			ss << " }";
 		}
@@ -361,7 +361,7 @@ private:
 		template<typename T>
 		void add(std::string const& _k, T const& _v)
 		{
-			size_t idx = index(_k, true);
+			(void)index(_k, true);
 
 			create_kval(_k, _v);
 		}
@@ -370,7 +370,8 @@ private:
 		template<typename ... T>
 		void add_multi(std::string const& _k, T const& ... values)
 		{
-			size_t idx = index(_k, true);
+			(void)index(_k, true);
+
 			std::stringstream ss;
 			ss.precision(16);
 			ss << "{ ";
@@ -1111,7 +1112,7 @@ public:
 };
 
 template<>
-inline void ENVI::string_extract<decltype(std::ignore)>(std::string const& str, decltype(std::ignore)&)
+inline void ENVI::string_extract<decltype(std::ignore)>(std::string const& /* str */, decltype(std::ignore)&)
 {}
 
 std::shared_ptr<ENVI::Input> ENVI::ropen(std::string const& input_fname)
