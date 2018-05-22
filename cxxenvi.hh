@@ -1093,7 +1093,7 @@ public:
 
 		const size_t chnum = channel_idx - channels.cbegin();
 
-		load(chnum, o_lines, o_samples, o_data);
+		get_channel(chnum, o_lines, o_samples, o_data);
 	}
 
 	template<typename OutputType>
