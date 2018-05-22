@@ -57,6 +57,7 @@
 #include <vector>
 #include <stdexcept>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <memory>
 #include <algorithm>
