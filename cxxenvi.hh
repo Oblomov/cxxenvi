@@ -549,6 +549,25 @@ private:
 			prepare_writing();
 		}
 
+		// Create output, with given name, header file name, description
+		// and number of lines and samples (columns).
+		Output(std::string const& fname,
+			std::string const& fname_hdr,
+			std::string const& _desc,
+			size_t _lines, size_t _samples) :
+			description(_desc),
+			lines(_lines),
+			samples(_samples),
+			pixels(lines*samples),
+			channels(),
+			data(StreamType(fname)),
+			hdr(StreamType(fname_hdr)),
+			need_closing(true)
+		{
+			prepare_writing();
+		}
+
+
 		// Create output, with given name, description
 		// and number of lines and samples (columns).
 		// The header file will have the extension replaced by
@@ -669,6 +688,16 @@ public:
 	{
 		return std::shared_ptr<Output<OutputDataType>>(
 			new Output<OutputDataType>(output_fname, desc, lines, samples));
+	}
+
+	// create() variant specifying the header file name too
+	template<typename OutputDataType>
+	static std::shared_ptr<Output<OutputDataType>>
+	create(std::string const& output_fname, std::string const& hdr_fname, std::string const& desc,
+		size_t lines, size_t samples)
+	{
+		return std::shared_ptr<Output<OutputDataType>>(
+			new Output<OutputDataType>(output_fname, hdr_fname, desc, lines, samples));
 	}
 
 	// Comfort method to write a single-channel file
