@@ -113,6 +113,22 @@ public:
 		return ltrim(rtrim(str, whitespace), whitespace);
 	}
 
+	/* get line excluding \r. Return the length of the string
+	 * TODO we don't actually use the return type, should we return nothing?
+	 * Or conform to the std::getline behavior and return
+	 * the input stream?
+	 */
+	static inline std::string::size_type
+	getline(std::ifstream& stream, std::string &str)
+	{
+		std::getline(stream, str);
+		if(str.back() == '\r')
+		{
+			str = str.substr(0, str.length() - 1);
+		}
+		return str.length();
+	}
+
 	/*
 	 * Tuple functions
 	 */
@@ -393,7 +409,7 @@ private:
 			std::stringstream ss(v);
 			std::vector<std::string> ret;
 			std::string cur;
-			while (getline(ss, cur, ',')) {
+			while (std::getline(ss, cur, ',')) {
 				ret.push_back(trim(cur));
 			}
 			return ret;
@@ -805,7 +821,7 @@ protected:
 		val.clear();
 		while (line.empty())
 		{
-			std::getline(hdr, line);
+			ENVI::getline(hdr, line);
 			if (!hdr)
 				return; // nothing else to read
 		}
@@ -820,7 +836,7 @@ protected:
 		{
 			while (close == keyval.npos)
 			{
-				std::getline(hdr, line);
+				ENVI::getline(hdr, line);
 				keyval += line;
 				if (hdr.fail())
 					throw std::runtime_error("missing '}'");
@@ -902,7 +918,7 @@ protected:
 	void read_header()
 	{
 		std::string line;
-		std::getline(hdr, line);
+		ENVI::getline(hdr, line);
 		if (line != "ENVI")
 			throw std::runtime_error("missing 'ENVI' in header");
 
