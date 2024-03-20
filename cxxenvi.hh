@@ -169,14 +169,19 @@ public:
 		BIG = 1 /* Motorola, network byte order, etc */
 	};
 
-	constexpr static inline Endian endianness()
-	{
-		// TODO FIXME this is not guaranteed to work since there
-		// is no requirement that the string will be aligned
-		// in such a way that it could be reinterpreted as an
-		// uint16_t
-		return (*reinterpret_cast<const uint16_t*>("\xff\x00") == 0xff) ?
-			LITTLE : BIG ;
+	class Endianness {
+	private:
+		static constexpr uint16_t two = 0x0102;
+		static constexpr uint8_t  one = (const uint8_t&)two;
+	public:
+		constexpr static inline Endian check()
+		{
+			return one == 0x01 ? BIG : LITTLE;
+		}
+	};
+
+	constexpr static inline Endian endianness() {
+		return Endianness::check();
 	}
 
 	/*
